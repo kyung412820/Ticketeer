@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticketeer-redis
+  namespace: ticketeer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticketeer-redis
+  template:
+    metadata:
+      labels:
+        app: ticketeer-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7
+          command: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: ticketeer-redis-pvc

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticketeer-postgres
+  namespace: ticketeer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticketeer-postgres
+  template:
+    metadata:
+      labels:
+        app: ticketeer-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ticketeer-backend-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: "ticketeer"
+            - name: TZ
+              value: "Asia/Seoul"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U postgres -d ticketeer"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U postgres -d ticketeer"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: ticketeer-postgres-pvc

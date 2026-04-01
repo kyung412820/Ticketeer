@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticketeer-backend
+  namespace: ticketeer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticketeer-backend
+  template:
+    metadata:
+      labels:
+        app: ticketeer-backend
+    spec:
+      containers:
+        - name: backend
+          image: ticketeer-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ticketeer-backend-config
+            - secretRef:
+                name: ticketeer-backend-secret
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
